@@ -1,25 +1,22 @@
 import asyncio
 import aiohttp
 from utils.db import table_is_populated
-from database import engine, SessionLocal
+from app.database import engine, SessionLocal
 from app.models import Kanji
 from typing import List
+import os
 
 async def get_kanji_data_by_grade(grade:int) -> List[str]:
-
-    if grade not in range(1,6):
-        return []
  
     url = "https://kanjialive-api.p.rapidapi.com/api/public/search/advanced/"
 
     querystring = {"grade": str(grade)}
 
     headers = {
-        "x-rapidapi-key": "77e20574cemsha4e151f542aad6cp10fb6ejsn136b73c9ccc6",
+        "x-rapidapi-key": os.getenv("KANJI_ALIVE_API_KEY"),
         "x-rapidapi-host": "kanjialive-api.p.rapidapi.com",
         "Content-Type": "application/json"
     }
-
 
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
         async with session.get(url=url, headers=headers, params=querystring) as response:
@@ -59,13 +56,6 @@ async def seed_kanji_table(grade_number: int):
 
     async with SessionLocal() as session:
 
-        table_populated = await table_is_populated(table="kanji", session=session)
-
-        if table_populated:
-            
-            print("Table is already populated")
-            return 
-
         kanji_grade_list = await get_kanji_data_by_grade(grade_number)
 
 
@@ -82,7 +72,11 @@ async def seed_kanji_table(grade_number: int):
 
         await session.commit()
 
+async def seed_all():
+    for grade in range(1, 6):
+        await seed_kanji_table(grade)
+
 
 
 if __name__ == "__main__":
-    asyncio.run(seed_kanji_table(1)) # for MVP, grade 1 is fine but for production would need 1-5 immediately
+    asyncio.run(seed_all()) # for MVP, grade 1 is fine but for production would need 1-5 immediately

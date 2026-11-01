@@ -1,7 +1,9 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import make_url
 from app.models.Base import Base
+import os
 
 from alembic import context
 
@@ -13,6 +15,17 @@ config = context.config
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+def sync_url(url: str):
+    u = make_url(url).set(drivername="postgresql+asyncpg")
+    q = dict(u.query)
+    q.pop("channel_binding", None)
+    if q.pop("ssl", None):
+        q["sslmode"] = "require"
+    
+    return u.set(query=q).render_as_string(hide_password=False)
+
+config.set_main_option("sqlalchemy.url", sync_url(os.getenv("DATABASE_URL")))
 
 # add your model's MetaData object here
 # for 'autogenerate' support
