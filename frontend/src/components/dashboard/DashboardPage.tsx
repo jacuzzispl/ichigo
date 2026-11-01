@@ -5,6 +5,7 @@ import { SessionActionCards } from './SessionActionCards';
 import { StoryGeneratorWidget } from './StoryGeneratorWidget';
 import { CurriculumCarousel3D } from './CurriculumCarousel3D';
 import { CustomReviewModal } from '../review/CustomReviewModal';
+import sakura_outline from "../../assets/images/sakura_outline.jpg"
 
 interface DashboardPageProps {
   user: UserProfile | null;
@@ -29,7 +30,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 }) => {
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
 
-  const outlineBgImage = '/src/assets/images/sakura_outline_topright_1791579194144.jpg';
 
   return (
     <div className="relative w-full min-h-screen xl:h-screen xl:max-h-screen xl:overflow-hidden flex flex-col bg-[#050507] text-neutral-100 select-none overflow-y-auto">
@@ -39,7 +39,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div
           className="absolute top-0 right-0 w-full sm:w-[95%] md:w-[88%] lg:w-[80%] xl:w-[75%] h-full bg-no-repeat bg-right-top bg-contain opacity-85 pointer-events-none mix-blend-screen"
           style={{
-            backgroundImage: `url("${outlineBgImage}")`,
+            backgroundImage: `url("${sakura_outline}")`,
             backgroundPosition: 'top right',
           }}
         />

@@ -1,4 +1,5 @@
 import React from 'react';
+import sakura_tree_branch from "../assets/images/sakura_tree_branch.jpg"
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -13,7 +14,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   const bgImage =
     bgVariant === 'classic'
-      ? '/src/assets/images/sakura_tree_branch_1790973318275.jpg'
+      ? {sakura_tree_branch}
       : '/src/assets/images/sakura_branch_painted_1790973331991.jpg';
 
   return (
