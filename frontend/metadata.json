@@ -1,0 +1,6 @@
+{
+  "name": "Sakura Kanji - Learn Japanese",
+  "description": "Master Japanese Kanji with immersive wabi-sabi aesthetics, radical breakdowns, stroke order practice, and spaced repetition.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
