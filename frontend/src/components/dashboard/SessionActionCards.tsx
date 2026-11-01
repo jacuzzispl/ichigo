@@ -3,11 +3,13 @@ import React from 'react';
 interface SessionActionCardsProps {
   onStartLessons: () => void;
   onStartReviews: () => void;
+  onStartCustomReview?: () => void;
 }
 
 export const SessionActionCards: React.FC<SessionActionCardsProps> = ({
   onStartLessons,
   onStartReviews,
+  onStartCustomReview,
 }) => {
   const upcomingLessons = [
     { char: '日', meaning: 'Day / Sun', type: 'Kanji' },
@@ -122,13 +124,25 @@ export const SessionActionCards: React.FC<SessionActionCardsProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onStartReviews}
-            className="w-full py-2 rounded-full bg-purple-900/60 hover:bg-purple-800 text-purple-50 font-medium text-xs tracking-wide transition-all shadow-md flex items-center justify-center gap-1.5 mt-2"
-          >
-            <span>Start Reviews</span>
-            <span>→</span>
-          </button>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={onStartReviews}
+              className="flex-1 py-2 rounded-full bg-purple-900/60 hover:bg-purple-800 text-purple-50 font-medium text-xs tracking-wide transition-all shadow-md flex items-center justify-center gap-1.5"
+            >
+              <span>Start Reviews</span>
+              <span>→</span>
+            </button>
+            {onStartCustomReview && (
+              <button
+                type="button"
+                onClick={onStartCustomReview}
+                title="Select studied kanji for a custom review"
+                className="px-3 py-2 rounded-full bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.08] text-purple-300 hover:text-white text-xs font-mono transition-all"
+              >
+                Custom Review
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

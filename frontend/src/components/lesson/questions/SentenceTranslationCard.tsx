@@ -1,20 +1,33 @@
-import React, { useEffect, useState } from "react";
-import { QuizQuestion } from "../../../types";
-import { getSentenceQuestion } from "../../../data/sentenceData";
-import { soundEffects } from "../../../library/audioEffects";
+import React, { useMemo, useEffect } from 'react';
+import { QuizQuestion } from '../../../types';
+import { getSentenceQuestion } from '../../../data/sentenceData';
+import { soundEffects } from '../../../library/audioEffects';
+import { shuffleArray } from '../../../library/quizQueue';
 
 interface SentenceTranslationCardProps {
   question: QuizQuestion;
   selectedAnswer: string | null;
   isAnswered: boolean;
   isCorrect: boolean | null;
-  onSelectOption: (option: string) => void;
+  onSelectOption: (option: string, isCorrect?: boolean) => void;
   onContinue: () => void;
 }
 
-export const SentenceTranslationCard: React.FC<
-  SentenceTranslationCardProps
-> = ({
+/**
+ * Normalizes text to ensure robust comparison across curly/straight quotes,
+ * extraneous whitespace, and character casing.
+ */
+function normalizeText(s?: string | null): string {
+  if (!s) return '';
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/[\u2018\u2019\u201B\u2032']/g, "'") // normalize curly/smart single quotes
+    .replace(/[\u201C\u201D\u201F\u2033"]/g, '"') // normalize curly/smart double quotes
+    .replace(/\s+/g, ' ');
+}
+
+export const SentenceTranslationCard: React.FC<SentenceTranslationCardProps> = ({
   question,
   selectedAnswer,
   isAnswered,
@@ -23,53 +36,58 @@ export const SentenceTranslationCard: React.FC<
   onContinue,
 }) => {
   const { kanji } = question;
-  const sentenceData =
-    question.sentenceData ||
-    getSentenceQuestion(kanji.character, kanji.meanings);
-  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
 
-  // Shuffle options on question mount
-  useEffect(() => {
-    const opts = [...sentenceData.options];
-    for (let i = opts.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [opts[i], opts[j]] = [opts[j], opts[i]];
+  // Memoize sentenceData so it maintains referential stability and never recreates on re-renders
+  const sentenceData = useMemo(() => {
+    return question.sentenceData || getSentenceQuestion(kanji.character, kanji.meanings);
+  }, [question.id, question.sentenceData, kanji.character, kanji.meanings]);
+
+  // Memoize options strictly keyed by question.id so options never re-shuffle or flicker mid-question
+  const options = useMemo(() => {
+    if (question.options && question.options.length > 0) {
+      return question.options;
     }
-    setShuffledOptions(opts);
-  }, [question.id, sentenceData]);
+    return shuffleArray(sentenceData.options);
+  }, [question.id, question.options, sentenceData.options]);
+
+  const isOptionCorrect = (opt: string) => {
+    const target = sentenceData.correctAnswer || question.correctAnswer || '';
+    return normalizeText(opt) === normalizeText(target);
+  };
+
+  const handleOptionClick = (option: string) => {
+    if (isAnswered) return;
+    const correct = isOptionCorrect(option);
+    if (correct) {
+      soundEffects.playCorrect();
+    } else {
+      soundEffects.playIncorrect();
+    }
+    // Pass both option and verified correctness to eliminate any discrepancies
+    onSelectOption(option, correct);
+  };
 
   // Keyboard shortcuts: 1-4 to select option, Enter to continue
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isAnswered) {
-        if (["1", "2", "3", "4"].includes(e.key)) {
+        if (['1', '2', '3', '4'].includes(e.key)) {
           const index = parseInt(e.key, 10) - 1;
-          if (shuffledOptions[index]) {
-            handleOptionClick(shuffledOptions[index]);
+          if (options[index]) {
+            handleOptionClick(options[index]);
           }
         }
       } else {
-        if (e.key === "Enter" || e.key === " ") {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onContinue();
         }
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAnswered, shuffledOptions, onContinue]);
-
-  const handleOptionClick = (option: string) => {
-    if (isAnswered) return;
-    const correct = option.trim() === sentenceData.correctAnswer.trim();
-    if (correct) {
-      soundEffects.playCorrect();
-    } else {
-      soundEffects.playIncorrect();
-    }
-    onSelectOption(option);
-  };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnswered, options, onContinue, isOptionCorrect]);
 
   // Highlight the target kanji character in the sentence
   const parts = sentenceData.japaneseSentence.split(kanji.character);
@@ -83,8 +101,7 @@ export const SentenceTranslationCard: React.FC<
             Sentence Context
           </span>
           <span className="text-xs text-neutral-400 font-mono">
-            Target Kanji:{" "}
-            <strong className="text-white text-base">{kanji.character}</strong>
+            Target Kanji: <strong className="text-white text-base">{kanji.character}</strong>
           </span>
         </div>
 
@@ -119,33 +136,34 @@ export const SentenceTranslationCard: React.FC<
 
       {/* Multiple Choice Options (4 Choices) */}
       <div className="w-full space-y-2.5 mb-6">
-        {shuffledOptions.map((option, idx) => {
-          const isThisSelected = selectedAnswer === option;
-          const isThisCorrect =
-            option.trim() === sentenceData.correctAnswer.trim();
+        {options.map((option, idx) => {
+          const isThisSelected = selectedAnswer
+            ? normalizeText(selectedAnswer) === normalizeText(option)
+            : false;
+          const isThisCorrect = isOptionCorrect(option);
 
           let btnClasses =
-            "w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ";
+            'w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ';
 
           if (!isAnswered) {
             btnClasses +=
-              "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] hover:border-white/[0.2] text-neutral-200 cursor-pointer active:scale-[0.99]";
+              'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] hover:border-white/[0.2] text-neutral-200 cursor-pointer active:scale-[0.99]';
           } else {
             if (isThisCorrect) {
               btnClasses +=
-                "bg-emerald-950/40 border-emerald-500/80 text-emerald-200 font-medium shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+                'bg-emerald-950/40 border-emerald-500/80 text-emerald-200 font-medium shadow-[0_0_15px_rgba(16,185,129,0.15)]';
             } else if (isThisSelected && !isCorrect) {
               btnClasses +=
-                "bg-red-950/40 border-red-500/80 text-red-200 font-medium";
+                'bg-red-950/40 border-red-500/80 text-red-200 font-medium';
             } else {
               btnClasses +=
-                "bg-white/[0.01] border-white/[0.04] text-neutral-500 opacity-45 cursor-not-allowed";
+                'bg-white/[0.01] border-white/[0.04] text-neutral-500 opacity-45 cursor-not-allowed';
             }
           }
 
           return (
             <button
-              key={idx}
+              key={`${question.id}-opt-${idx}`}
               type="button"
               disabled={isAnswered}
               onClick={() => handleOptionClick(option)}
@@ -155,20 +173,14 @@ export const SentenceTranslationCard: React.FC<
                 <span className="w-6 h-6 rounded-md bg-white/[0.06] text-xs font-mono flex items-center justify-center text-neutral-400 shrink-0">
                   {idx + 1}
                 </span>
-                <span className="text-sm sm:text-base leading-snug">
-                  {option}
-                </span>
+                <span className="text-sm sm:text-base leading-snug">{option}</span>
               </div>
 
               {isAnswered && isThisCorrect && (
-                <span className="text-emerald-400 text-sm font-bold pl-2 shrink-0">
-                  ✓
-                </span>
+                <span className="text-emerald-400 text-sm font-bold pl-2 shrink-0">✓</span>
               )}
               {isAnswered && isThisSelected && !isCorrect && (
-                <span className="text-red-400 text-sm font-bold pl-2 shrink-0">
-                  ✕
-                </span>
+                <span className="text-red-400 text-sm font-bold pl-2 shrink-0">✕</span>
               )}
             </button>
           );
@@ -181,13 +193,13 @@ export const SentenceTranslationCard: React.FC<
           <div
             className={`p-4 rounded-xl border ${
               isCorrect
-                ? "bg-emerald-950/25 border-emerald-800/50 text-emerald-200"
-                : "bg-red-950/25 border-red-800/50 text-red-200"
+                ? 'bg-emerald-950/25 border-emerald-800/50 text-emerald-200'
+                : 'bg-red-950/25 border-red-800/50 text-red-200'
             }`}
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-semibold tracking-wider uppercase font-mono">
-                {isCorrect ? "Correct Translation!" : "Incorrect Translation:"}
+                {isCorrect ? 'Correct Translation!' : 'Incorrect Translation:'}
               </span>
             </div>
 
@@ -205,9 +217,7 @@ export const SentenceTranslationCard: React.FC<
             className="w-full py-3.5 rounded-full bg-neutral-100 hover:bg-white text-neutral-950 text-sm font-medium transition-all shadow-lg flex items-center justify-center gap-2"
           >
             <span>Continue</span>
-            <span className="text-xs font-mono text-neutral-500">
-              (Enter ↵)
-            </span>
+            <span className="text-xs font-mono text-neutral-500">(Enter ↵)</span>
           </button>
         </div>
       )}

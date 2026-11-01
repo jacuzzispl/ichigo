@@ -11,6 +11,7 @@ class QuestionType(str, Enum):
     kanji_to_romaji_english = "kanji_to_romaji_english"
     english_to_hiragana = "english_to_hiragana"
     sentence_translation = "sentence_translation"
+    english_to_kanji = "english_to_kanji"
 
 
 

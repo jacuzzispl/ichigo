@@ -48,8 +48,36 @@ export function createSentenceQuestion(kanji: LessonKanji): QuizQuestion {
     type: 'sentence_translation',
     prompt: `Choose the correct English translation of the sentence`,
     sentenceData,
-    options: sentenceData.options,
+    options: shuffleArray(sentenceData.options),
     correctAnswer: sentenceData.correctAnswer,
+  };
+}
+
+const FALLBACK_DISTRACTOR_KANJI = ['日', '月', '木', '水', '火', '金', '土', '山', '川', '大', '小', '人', '校', '年', '手'];
+
+/**
+ * Creates an English -> Multiple Choice Kanji question.
+ * Uses other kanji from the batch as distractors.
+ */
+export function createEnglishToKanjiQuestion(
+  kanji: LessonKanji,
+  batch: LessonKanji[]
+): QuizQuestion {
+  const otherCharacters = (batch || [])
+    .filter((k) => k.character !== kanji.character)
+    .map((k) => k.character);
+
+  const pool = [...otherCharacters, ...FALLBACK_DISTRACTOR_KANJI.filter((c) => c !== kanji.character)];
+  const distractors = shuffleArray(Array.from(new Set(pool))).slice(0, 3);
+  const options = shuffleArray([kanji.character, ...distractors]);
+
+  return {
+    id: `${kanji.id}-english_to_kanji`,
+    kanji,
+    type: 'english_to_kanji',
+    prompt: `Select the kanji that matches the English meaning "${kanji.meanings[0] || kanji.meaning}"`,
+    options,
+    correctAnswer: kanji.character,
   };
 }
 
@@ -92,14 +120,17 @@ export function buildQuizQueue(batch: LessonKanji[]): QuizQuestion[] {
   // Round 3: English to Live Hiragana IME typing
   const round3: QuizQuestion[] = batch.map((k) => createEnglishToHiraganaQuestion(k));
 
-  // Round 4: Contextual sentence translation
-  const round4: QuizQuestion[] = batch.map((k) => createSentenceQuestion(k));
+  // Round 4: English to 4-Choice Kanji Multiple Choice
+  const round4: QuizQuestion[] = batch.map((k) => createEnglishToKanjiQuestion(k, batch));
 
-  // Round 5: Outline stroke drawing (no dots)
-  const round5: QuizQuestion[] = batch.map((k) => createStrokeQuestion(k, 'outline'));
+  // Round 5: Contextual sentence translation
+  const round5: QuizQuestion[] = batch.map((k) => createSentenceQuestion(k));
 
-  // Round 6: Final blank canvas mastery drawing (no outline)
-  const round6: QuizQuestion[] = batch.map((k) => createStrokeQuestion(k, 'blank'));
+  // Round 6: Outline stroke drawing (no dots)
+  const round6: QuizQuestion[] = batch.map((k) => createStrokeQuestion(k, 'outline'));
+
+  // Round 7: Final blank canvas mastery drawing (no outline)
+  const round7: QuizQuestion[] = batch.map((k) => createStrokeQuestion(k, 'blank'));
 
   // Interleave and shuffle ensuring no adjacent same-kanji
   const orderedRounds = [
@@ -109,6 +140,7 @@ export function buildQuizQueue(batch: LessonKanji[]): QuizQuestion[] {
     shuffleQueueNoAdjacentSameKanji(round4),
     shuffleQueueNoAdjacentSameKanji(round5),
     shuffleQueueNoAdjacentSameKanji(round6),
+    shuffleQueueNoAdjacentSameKanji(round7),
   ];
 
   const fullQueue: QuizQuestion[] = [];

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LessonKanji, KanjiSessionOutcome } from '../../types';
 import { getLessonBatch } from '../../api/lessons';
 import { LessonCards } from './LessonCards';
-import { Quiz } from './Quiz';
+import { Quiz } from "./Quiz"
 import { Summary } from './Summary';
 
 interface LessonSessionProps {

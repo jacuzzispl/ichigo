@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import {
   LessonKanji,
   QuizQuestion,
   KanjiSessionOutcome,
   AnswerRecord,
-} from "../../types";
-import { buildQuizQueue, requeueQuestion } from "../../library/quizQueue";
-import { QuestionCard } from "./QuestionCard";
+} from '../../types';
+import { buildQuizQueue, requeueQuestion } from '../../library/quizQueue';
+import { QuestionCard } from './QuestionCard';
 
 interface QuizProps {
   batch: LessonKanji[];
@@ -15,9 +15,7 @@ interface QuizProps {
 }
 
 export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
-  const [queue, setQueue] = useState<QuizQuestion[]>(() =>
-    buildQuizQueue(batch),
-  );
+  const [queue, setQueue] = useState<QuizQuestion[]>(() => buildQuizQueue(batch));
   const initialQueueLength = useRef(queue.length).current;
 
   // Question interaction state
@@ -33,28 +31,22 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
 
   // Outcome tracking per kanji
   const outcomesRef = useRef<Record<number, KanjiSessionOutcome>>(
-    batch.reduce(
-      (acc, k) => {
-        acc[k.id] = {
-          kanji_id: k.id,
-          meaning_incorrect: 0,
-          reading_incorrect: 0,
-          first_try_meaning: true,
-          first_try_reading: true,
-          answers: [],
-        };
-        return acc;
-      },
-      {} as Record<number, KanjiSessionOutcome>,
-    ),
+    batch.reduce((acc, k) => {
+      acc[k.id] = {
+        kanji_id: k.id,
+        meaning_incorrect: 0,
+        reading_incorrect: 0,
+        first_try_meaning: true,
+        first_try_reading: true,
+        answers: [],
+      };
+      return acc;
+    }, {} as Record<number, KanjiSessionOutcome>)
   );
 
   // Consecutive wrong count per question ID (to trigger 3-strike intervention)
-  const [wrongCountPerQuestion, setWrongCountPerQuestion] = useState<
-    Record<string, number>
-  >({});
-  const [interstitialKanji, setInterstitialKanji] =
-    useState<LessonKanji | null>(null);
+  const [wrongCountPerQuestion, setWrongCountPerQuestion] = useState<Record<string, number>>({});
+  const [interstitialKanji, setInterstitialKanji] = useState<LessonKanji | null>(null);
 
   const currentQuestion = queue[0];
 
@@ -95,9 +87,9 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
       }));
     } else {
       if (
-        type === "meaning" ||
-        type === "kanji_to_romaji_english" ||
-        type === "sentence_translation"
+        type === 'meaning' ||
+        type === 'kanji_to_romaji_english' ||
+        type === 'sentence_translation'
       ) {
         outcome.meaning_incorrect += 1;
         outcome.first_try_meaning = false;
@@ -106,8 +98,7 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
         outcome.first_try_reading = false;
       }
 
-      const nextWrongCount =
-        (wrongCountPerQuestion[currentQuestion.id] || 0) + 1;
+      const nextWrongCount = (wrongCountPerQuestion[currentQuestion.id] || 0) + 1;
       setWrongCountPerQuestion((prev) => ({
         ...prev,
         [currentQuestion.id]: nextWrongCount,
@@ -115,11 +106,26 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
     }
   };
 
-  const handleSelectOption = (option: string) => {
+  const normalizeAnswer = (text?: string | null): string => {
+    if (!text) return '';
+    return text
+      .trim()
+      .toLowerCase()
+      .replace(/[\u2018\u2019\u201B\u2032']/g, "'")
+      .replace(/[\u201C\u201D\u201F\u2033"]/g, '"')
+      .replace(/\s+/g, ' ');
+  };
+
+  const handleSelectOption = (option: string, explicitCorrect?: boolean) => {
     if (isAnswered || !currentQuestion) return;
+    const target =
+      currentQuestion.sentenceData?.correctAnswer ||
+      currentQuestion.correctAnswer ||
+      '';
     const correct =
-      option.toLowerCase() ===
-      (currentQuestion.correctAnswer || "").toLowerCase();
+      typeof explicitCorrect === 'boolean'
+        ? explicitCorrect
+        : normalizeAnswer(option) === normalizeAnswer(target);
     handleAnswerSubmit(correct, option);
   };
 
@@ -153,9 +159,7 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
 
   const progressPercent = Math.min(
     100,
-    Math.round(
-      (completedDistinctCount / Math.max(1, initialQueueLength)) * 100,
-    ),
+    Math.round((completedDistinctCount / Math.max(1, initialQueueLength)) * 100)
   );
 
   return (
@@ -231,7 +235,7 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
                 className="text-2xl font-light text-white"
                 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
               >
-                {interstitialKanji.meanings.join(", ")}
+                {interstitialKanji.meanings.join(', ')}
               </div>
             </div>
 
@@ -241,7 +245,7 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
                   On'yomi (音読み)
                 </div>
                 <div className="text-xl font-light text-white font-mono">
-                  {interstitialKanji.onyomi.join(", ") || "—"}
+                  {interstitialKanji.onyomi.join(', ') || '—'}
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08]">
@@ -249,7 +253,7 @@ export const Quiz: React.FC<QuizProps> = ({ batch, onComplete, onExit }) => {
                   Kun'yomi (訓読み)
                 </div>
                 <div className="text-xl font-light text-white font-mono">
-                  {interstitialKanji.kunyomi.join(", ") || "—"}
+                  {interstitialKanji.kunyomi.join(', ') || '—'}
                 </div>
               </div>
             </div>

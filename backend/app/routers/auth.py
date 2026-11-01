@@ -5,11 +5,11 @@ from sqlalchemy import select
 from pwdlib import PasswordHash
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta, timezone
-from database import get_db
+from app.database import get_db
 from ..models import User
 from ..schemas import TokenResponse, RegisterRequest
 import jwt
-from jwt.exceptions import InvalidTokenError
+from jwt.exceptions import InvalidTokenError, ExpiredSignatureError
 import os
 from typing import Annotated
 
@@ -37,8 +37,7 @@ def get_password_hash(password: str) -> str:
 
 async def get_user(username: str, session: AsyncSession) -> User | None:
     #check if the username exists
-
-    query = await session.execute(select(User).where(User.username == username))
+    query = await session.execute(select(User).where(User.username == username or User.email == username))
     user = query.scalar_one_or_none()
 
     return user if user else None
@@ -74,14 +73,14 @@ async def get_current_user(session: AsyncSession, token: str):
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
-            print(user_id)
             raise credentials_exception
         token_data = TokenData(user_id=user_id)
     except InvalidTokenError:
         raise credentials_exception
+    except ExpiredSignatureError:
+        raise HTTPException(status_code="401" , detail="Token expired. Sign in again.")
     result = await session.scalars(select(User).where(User.id == token_data.user_id))
     user = result.one_or_none()
-    print(user)
     if not user:
         raise credentials_exception
     return user

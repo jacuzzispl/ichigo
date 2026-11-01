@@ -19,6 +19,19 @@ from typing import Annotated
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
 
+def status_for(times_reviewed: int) -> str | None:
+    if times_reviewed > 100:
+        return "Supreme"
+    if times_reviewed > 50:
+        return "Leader"
+    if times_reviewed > 25:
+        return "Master"
+    if times_reviewed > 10:
+        return "Senior"
+    if times_reviewed > 0:
+        return "Rookie"
+    return None
+
 
 @router.post("/complete")
 async def complete_lesson(
@@ -30,13 +43,13 @@ async def complete_lesson(
         raise HTTPException(status_code=400, detail="Duplicate kanji_id in results")
 
     # One query for all of this user's SRS rows involved in the session
-    print(type(user.id))
     rows = await session.execute(
         select(UserKanjiEntry).where(
             UserKanjiEntry.user_id == int(user.id),
             UserKanjiEntry.kanji_id.in_(kanji_ids),
         )
     )
+        
     states = {uk.kanji_id: uk for uk in rows.scalars().all()}
 
     missing = set(kanji_ids) - states.keys()
@@ -76,6 +89,8 @@ async def complete_lesson(
         uk.ease_factor = after.ease_factor
         uk.interval_days = after.interval_days
         uk.next_review_at = now + timedelta(days=after.interval_days)
+        uk.times_reviewed += 1
+        uk.status = status_for(uk.times_reviewed)
 
         out.append(
             KanjiResultOut(
@@ -84,7 +99,7 @@ async def complete_lesson(
                 interval_days=after.interval_days,
                 next_review_at=uk.next_review_at,
             )
-        )
-
-    print("submission received")
+        )  
+    print("hi")
     await session.commit()
+    print("hello")

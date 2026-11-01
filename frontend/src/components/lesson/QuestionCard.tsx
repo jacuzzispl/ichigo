@@ -4,13 +4,14 @@ import { KanjiToRomajiEnglishCard } from './questions/KanjiToRomajiEnglishCard';
 import { EnglishToHiraganaCard } from './questions/EnglishToHiraganaCard';
 import { SentenceTranslationCard } from './questions/SentenceTranslationCard';
 import { StrokeDrawingCard } from './questions/StrokeDrawingCard';
+import { EnglishToKanjiCard } from './questions/EnglishToKanjiCard';
 
 interface QuestionCardProps {
   question: QuizQuestion;
   selectedAnswer: string | null;
   isAnswered: boolean;
   isCorrect: boolean | null;
-  onSelectOption: (option: string) => void;
+  onSelectOption: (option: string, isCorrect?: boolean) => void;
   onSubmitAnswer: (correct: boolean, inputSummary: string) => void;
   onContinue: () => void;
 }
@@ -26,6 +27,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 }) => {
   switch (question.type) {
     case 'kanji_to_romaji_english':
+    case 'meaning':
       return (
         <KanjiToRomajiEnglishCard
           question={question}
@@ -37,6 +39,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       );
 
     case 'english_to_hiragana':
+    case 'reading':
       return (
         <EnglishToHiraganaCard
           question={question}
@@ -69,7 +72,18 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         />
       );
 
-    // Legacy fallback for meaning / reading
+    case 'english_to_kanji':
+      return (
+        <EnglishToKanjiCard
+          question={question}
+          selectedAnswer={selectedAnswer}
+          isAnswered={isAnswered}
+          isCorrect={isCorrect}
+          onSelectOption={onSelectOption}
+          onContinue={onContinue}
+        />
+      );
+
     default:
       return (
         <SentenceTranslationCard

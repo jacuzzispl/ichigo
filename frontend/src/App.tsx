@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavTab, KanjiItem, UserProfile } from './types';
+import { NavTab, KanjiItem, UserProfile, LessonKanji, Story } from './types';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { LearnSection } from './components/LearnSection';
@@ -10,6 +10,8 @@ import { KanjiModal } from './components/KanjiModal';
 import { AuthModal } from './components/AuthModal';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { LessonSession } from './components/lesson/LessonSession';
+import { ReviewSession } from './components/review/ReviewSession';
+import { StoryReaderPage } from './components/story/StoryReaderPage';
 import { KANJI_DATA } from './data/kanjiData';
 import { authStorage, authApi } from './services/authApi';
 
@@ -24,6 +26,9 @@ export default function App() {
   const [petalDensity, setPetalDensity] = useState<'off' | 'subtle' | 'breeze' | 'blizzard'>('subtle');
   const [bgVariant, setBgVariant] = useState<'classic' | 'painted'>('classic');
   const [readingPreference, setReadingPreference] = useState<'kanji-only' | 'furigana' | 'romaji'>('furigana');
+  const [customReviewKanji, setCustomReviewKanji] = useState<LessonKanji[] | null>(null);
+  const [activeStory, setActiveStory] = useState<{ story: Story; targetKanji: string[]; level: string } | null>(null);
+
 
   const handleOpenAuth = (mode: 'login' | 'signup') => {
     setAuthMode(mode);
@@ -44,13 +49,24 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleOpenStoryReader = (story: Story, targetKanji: string[], level: string) => {
+    setActiveStory({ story, targetKanji, level });
+    setCurrentTab('story-reader');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectTab = (tab: NavTab) => {
     setCurrentTab(tab);
     if (tab === 'settings') {
       setIsSettingsOpen(true);
       return;
     }
-    if (tab === 'dashboard' || tab === 'learn-session') {
+    if (
+      tab === 'dashboard' ||
+      tab === 'learn-session' ||
+      tab === 'review-session' ||
+      tab === 'story-reader'
+    ) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -87,7 +103,13 @@ export default function App() {
 
   // Sync scroll position with current tab indicator ONLY when on home page
   useEffect(() => {
-    if (currentTab === 'dashboard' || currentTab === 'learn-session') return;
+    if (
+      currentTab === 'dashboard' ||
+      currentTab === 'learn-session' ||
+      currentTab === 'review-session' ||
+      currentTab === 'story-reader'
+    )
+      return;
 
     const handleScroll = () => {
       const scrollPos = window.scrollY;
@@ -114,6 +136,31 @@ export default function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
+      ) : currentTab === 'review-session' ? (
+        /* If currentTab is 'review-session', render the SRS Review Session Page */
+        <ReviewSession
+          user={user}
+          initialKanjiList={customReviewKanji || undefined}
+          onFinish={() => {
+            setCustomReviewKanji(null);
+            setCurrentTab('dashboard');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      ) : currentTab === 'story-reader' && activeStory ? (
+        /* Dedicated Full-Screen Story Reader Page taking up most of the screen */
+        <StoryReaderPage
+          story={activeStory.story}
+          targetKanji={activeStory.targetKanji}
+          level={activeStory.level}
+          onBackToDashboard={() => {
+            setCurrentTab('dashboard');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onRegenerate={() => {
+            setCurrentTab('dashboard');
+          }}
+        />
       ) : currentTab === 'dashboard' ? (
         /* If currentTab is 'dashboard', render the Learning Dashboard Page */
         <DashboardPage
@@ -128,6 +175,17 @@ export default function App() {
             setCurrentTab('learn-session');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onStartReviews={() => {
+            setCustomReviewKanji(null);
+            setCurrentTab('review-session');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onStartCustomReview={(selected) => {
+            setCustomReviewKanji(selected);
+            setCurrentTab('review-session');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenStoryReader={handleOpenStoryReader}
         />
       ) : (
         /* Otherwise, render the exact Home landing page */
@@ -236,5 +294,3 @@ export default function App() {
     </div>
   );
 }
-
-

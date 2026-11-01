@@ -4,6 +4,7 @@ import { UserProfileWidget } from './UserProfileWidget';
 import { SessionActionCards } from './SessionActionCards';
 import { StoryGeneratorWidget } from './StoryGeneratorWidget';
 import { CurriculumCarousel3D } from './CurriculumCarousel3D';
+import { CustomReviewModal } from '../review/CustomReviewModal';
 
 interface DashboardPageProps {
   user: UserProfile | null;
@@ -11,6 +12,9 @@ interface DashboardPageProps {
   onOpenProfile: () => void;
   onSelectKanji: (kanji: KanjiItem) => void;
   onStartLessons: () => void;
+  onStartReviews: () => void;
+  onStartCustomReview: (selectedKanji: any[]) => void;
+  onOpenStoryReader?: (story: any, targetKanji: string[], level: string) => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -19,8 +23,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenProfile,
   onSelectKanji,
   onStartLessons,
+  onStartReviews,
+  onStartCustomReview,
+  onOpenStoryReader,
 }) => {
-  const [activeSessionModal, setActiveSessionModal] = useState<'review' | null>(null);
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
 
   const outlineBgImage = '/src/assets/images/sakura_outline_topright_1791579194144.jpg';
 
@@ -113,7 +120,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="flex-1 min-h-[270px] xl:min-h-0 flex flex-col">
             <SessionActionCards
               onStartLessons={onStartLessons}
-              onStartReviews={() => setActiveSessionModal('review')}
+              onStartReviews={onStartReviews}
+              onStartCustomReview={() => setIsCustomModalOpen(true)}
             />
           </div>
         </div>
@@ -122,7 +130,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="lg:col-span-7 flex flex-col gap-3 min-h-0">
           {/* Story Generator Widget (Top) */}
           <div className="flex-1 min-h-[220px] xl:min-h-0">
-            <StoryGeneratorWidget />
+            <StoryGeneratorWidget onStoryGenerated={onOpenStoryReader} />
           </div>
 
           {/* 3D Curriculum Carousel Widget with 2-finger scroll & See All (Bottom) */}
@@ -132,54 +140,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </main>
 
-      {/* Interactive Session Modal Preview (for Review) */}
-      {activeSessionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-          <div className="absolute inset-0" onClick={() => setActiveSessionModal(null)} />
-          <div className="relative w-full max-w-md bg-[#0e0e12] border border-neutral-800 rounded-2xl p-6 shadow-2xl z-10 text-neutral-200">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-800 mb-5">
-              <h4
-                className="text-2xl font-light text-neutral-100"
-                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}
-              >
-                Review Session
-              </h4>
-              <button
-                onClick={() => setActiveSessionModal(null)}
-                className="p-1 text-neutral-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="text-center py-4">
-              <div
-                className="text-6xl font-light text-[#fbfaf7] mb-3"
-                style={{ fontFamily: "'Noto Serif JP', serif" }}
-              >
-                桜
-              </div>
-              <div className="text-base font-medium text-neutral-200 mb-1">
-                Cherry Blossom
-              </div>
-              <div className="text-xs text-neutral-400 font-mono mb-4">
-                オウ · さくら
-              </div>
-
-              <p className="text-xs text-neutral-400 max-w-xs mx-auto leading-relaxed mb-6">
-                Recall meaning and pronunciation to advance this kanji in spaced repetition.
-              </p>
-
-              <button
-                onClick={() => setActiveSessionModal(null)}
-                className="px-6 py-2 rounded-full bg-neutral-100 hover:bg-white text-neutral-950 text-xs font-medium transition-colors"
-              >
-                Close Session Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Custom Review Kanji Selector Modal */}
+      <CustomReviewModal
+        isOpen={isCustomModalOpen}
+        onClose={() => setIsCustomModalOpen(false)}
+        onStartCustomReview={(selected) => {
+          setIsCustomModalOpen(false);
+          onStartCustomReview(selected);
+        }}
+      />
     </div>
   );
 };

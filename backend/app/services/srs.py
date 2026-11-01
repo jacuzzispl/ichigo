@@ -32,8 +32,6 @@ def quality_from_answers(answers) -> tuple[int, int, int, int]:
 def sm2(q: int, state: SrsState) -> SrsState:
     if q < 3:
         return SrsState(repetitions=0, ease_factor=state.ease_factor, interval_days=1)
-    
-    print(f"{type(state.ease_factor)}\n\n\n\n\n\n\n\n\n")
 
     reps = state.repetitions + 1
     if reps == 1:

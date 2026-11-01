@@ -1,1 +1,5 @@
-#review session request (what user sends when submitting an answer), #review log response
+from app.schemas.kanji import KanjiCard
+from pydantic import BaseModel
+
+class KanjiDue(BaseModel):
+    due: list[KanjiCard]
