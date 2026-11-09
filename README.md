@@ -1,8 +1,6 @@
-This is a Japanese SRS-based application designed for helping beginner to intermediate learners memorise kanji across the N5 - N1 curriculumn.
+A spaced-repetition schedule app designed to help beginner to intermediate learners practice and memorise all kanji from the N5-1 curriculumn.
 
-Stack
+This is a work in progress and is still being updated! You can check out the current version [here](https://ichigo-igkzpzdir-atunwas-projects.vercel.app)
 
-- React
-- Tailwind CSS
-- Python / FastAPI
-- SQLAlchemy
+<img width="1357" height="751" alt="Screenshot 2026-11-09 at 13 17 16" src="https://github.com/user-attachments/assets/4a48d87a-f74b-4f37-b989-90b19e12a3c9" />
+
